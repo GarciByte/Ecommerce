@@ -11,7 +11,7 @@
 
 .profile-info {
     max-width: 600px;
-    margin: 0 auto; /* Centrar el contenedor */
+    margin: 0 auto; 
     padding: 20px;
     border: 1px solid #007acc;
     border-radius: 8px;
@@ -58,4 +58,11 @@
 .profile-input input:focus {
     border-color: #004a8d;
     outline: none;
+}
+
+/* Responsivo para pantallas pequeñas */
+@media (max-width: 768px) {
+    .card-advantage {
+        flex: 1 1 100%;
+    }
 }
