@@ -2,7 +2,9 @@
 using Ecommerce.Models.Database.Entities;
 using Ecommerce.Models.Database.Repositories.Implementations;
 using Ecommerce.Models.Dtos;
+using Ecommerce.Models.Mappers;
 using Ecommerce.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Ecommerce.Controllers
@@ -12,10 +14,12 @@ namespace Ecommerce.Controllers
     public class UserController : ControllerBase
     {
         private readonly UserService _userService;
+        private readonly UserMapper _userMapper;
 
-        public UserController(UserService userService)
+        public UserController(UserService userService, UserMapper userMapper)
         {
             _userService = userService;
+            _userMapper = userMapper;
         }
 
         // devuelve un usuario buscado por email
@@ -54,38 +58,60 @@ namespace Ecommerce.Controllers
             return Ok(user);
         }
 
-        // Se pasa la id por si un admin modifica a otro usuario
-        [HttpPut("modifyUser/{userId}")]
-        public async Task<IActionResult> ModifyUser(/*[FromBody] User user*/ int userId, [FromForm] string newName, [FromForm] string newEmail, [FromForm] string newPassword, [FromForm] string newAddress, [FromForm] string newRole)
+        [Authorize]
+        [HttpPut("modifyUser")]
+        public async Task<IActionResult> ModifyUser([FromBody] UserProfileDto userDto)
         {
 
-            // ESTO DE DEBAJO ESTÁ COMENTADO XQ ME DABA ERROR //
-
             // Obtener datos del usuario para modificarse a si mismo
-            //User userData = await ReadToken();
+            UserProfileDto userData = await ReadToken();
 
-            //if (userData == null)
-            //{
-            //    return BadRequest("El usuario es null");
-            //}
-
-            var user = await _userService.GetUserByIdAsyncNoDto(userId);
-
-            //if (userData.Role != "Admin" && userData.Id != userId)
-
-            if (user.Role != "Admin" && user.Id != userId)
+            if (userData == null)
             {
-                return BadRequest("No tienes permisos para modificar este usuario.");
+                return BadRequest("El usuario es null");
             }
 
             try
             {
-                await _userService.ModifyUserAsync(userId, newName, newEmail, newPassword, newAddress, newRole);
+                await _userService.ModifyUserAsync(userData);
                 return Ok("Usuario actualizado correctamente.");
             }
             catch (InvalidOperationException)
             {
                 return BadRequest("No pudo modificarse el usuario.");
+            }
+        }
+
+        // Solo pueden usar este método los usuarios cuyo rol sea admin
+        //[Authorize(Roles = "Admin")] Descomentar esto cuando esté implementado en front (en swagger no se puede probar)
+        [HttpPut("modifyUserRole/{userId}")]
+        public async Task<IActionResult> ModifyUserRole(int userId, string newRole)
+        {
+
+            // Obtener datos del usuario
+            UserDto userData = await _userService.GetUserByIdAsync(userId);
+
+            if (userData == null)
+            {
+                return BadRequest("El usuario es null");
+            }
+
+            try
+            {
+                if (newRole == "User" || newRole == "Admin")
+                {
+                    await _userService.ModifyUserRoleAsync(userId, newRole);
+                    return Ok("Rol de usuario actualizado correctamente.");
+                }
+                else
+                {
+                    return BadRequest("El nuevo rol debe ser User o Admin");
+                }
+                
+            }
+            catch (InvalidOperationException)
+            {
+                return BadRequest("No pudo modificarse el rol del usuario.");
             }
         }
 
@@ -106,13 +132,14 @@ namespace Ecommerce.Controllers
         }
 
         // Leer datos del token
-        private async Task<User> ReadToken()
+        private async Task<UserProfileDto> ReadToken()
         {
             try
             {
                 string id = User.Claims.FirstOrDefault().Value;
                 User user = await _userService.GetUserByIdAsyncNoDto(Int32.Parse(id));
-                return user;
+                UserProfileDto userDto = _userMapper.UserProfileToDto(user);
+                return userDto;
             }
             catch (Exception)
             {
