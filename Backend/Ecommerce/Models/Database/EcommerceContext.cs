@@ -10,6 +10,7 @@ public class EcommerceContext : DbContext
     private const string DATABASE_PATH = "Ecommerce.db";
 
     // Tablas
+    public DbSet<Image> Images { get; set; }
     public DbSet<Cart> Cart { get; set; }
 
     public DbSet<Order> Order { get; set; }
@@ -27,6 +28,7 @@ public class EcommerceContext : DbContext
     public DbSet<Review> Review { get; set; }
 
     public DbSet<User> User { get; set; }
+
 
     // Crea archivo SQLite
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

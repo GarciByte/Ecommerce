@@ -11,6 +11,7 @@ import { RouterModule } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { CriterioOrden, SearchDto } from '../../models/searchDto';
 import { SelectButtonModule } from 'primeng/selectbutton';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-catalog',
@@ -56,6 +57,7 @@ export class CatalogComponent implements OnInit {
         this.updateProducts(config);
       } catch (error) {
         console.error('Error al cargar la configuración de usuario:', error);
+        this.throwError("Error al cargar la configuración de usuario.");
       }
     }
   }
@@ -97,6 +99,7 @@ export class CatalogComponent implements OnInit {
 
     } catch (error) {
       console.error('Error al cargar los productos:', error);
+      this.throwError("Error al cargar los productos.");
     }
   }
 
@@ -140,11 +143,11 @@ export class CatalogComponent implements OnInit {
   search() {
     this.currentPage = 1;
     this.loadProducts();
-    console.log('Datos enviados:', {
+   /* console.log('Datos enviados:', {
       query: this.query,
       currentPage: this.currentPage,
       pageSize: this.pageSize,
-    });
+    });*/
   }
 
   // nº de productos por pagina
@@ -172,6 +175,16 @@ export class CatalogComponent implements OnInit {
       return Math.round(sum / reviews.length);
     }
     return 0;
+  }
+
+  // Cuadro de diálogo de error
+  throwError(error: string) {
+    Swal.fire({ 
+      title: "Se ha producido un error",
+      text: error,
+      icon: "error",
+      confirmButtonText: "Vale"
+    });
   }
 
 }

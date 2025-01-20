@@ -1,12 +1,9 @@
-﻿using Ecommerce.Models.Database.Entities;
-using Ecommerce.Models.Database.Repositories.Implementations;
+﻿using Ecommerce.Models.Database;
+using Ecommerce.Models.Database.Entities;
 using Ecommerce.Models.Dtos;
 using Ecommerce.Models.Mappers;
 using Ecommerce.Services;
 using Microsoft.AspNetCore.Mvc;
-using Nethereum.Model;
-
-
 
 namespace Ecommerce.Controllers;
 
@@ -14,12 +11,10 @@ namespace Ecommerce.Controllers;
 [Route("api/[controller]")]
 public class ProductController : ControllerBase
 {
-    private readonly ProductRepository _productRepository;
     private readonly ProductService _productService;
     private readonly ProductMapper _productMapper;
-    public ProductController(ProductRepository productRepository, ProductService productService, ProductMapper productMapper)
+    public ProductController(ProductService productService, ProductMapper productMapper)
     {
-        _productRepository = productRepository;
         _productService = productService;
         _productMapper = productMapper;
     }
@@ -42,7 +37,7 @@ public class ProductController : ControllerBase
     // busqueda por id de productos
     public async Task<IActionResult> GetProductByIdAsync(int id)
     {
-        var product = await _productRepository.GetProductById(id);
+        var product = await _productService.GetProductByIdAsync(id);
 
         if (product == null)
         {
@@ -74,13 +69,14 @@ public class ProductController : ControllerBase
 
     // Modificar producto existente
     [HttpPut("modifyProduct/{productId}")]
-    public async Task<IActionResult> ModifyProduct(int productId, string newName, int newPrice, int newStock, string newDescription, [FromForm] string newImage)
+    public async Task<IActionResult> ModifyProduct(int productId, [FromBody] ProductDto productRequest)
     {
         var product = await _productService.GetProductByIdAsync(productId);
 
         try
         {
-            await _productService.ModifyProductAsync(productId, newName, newPrice, newStock, newDescription, newImage);
+            await _productService.ModifyProductAsync(productId, productRequest.Name,
+                productRequest.Price, productRequest.Stock, productRequest.Description, productRequest.Image);
             return Ok("Producto actualizado correctamente.");
         }
         catch (InvalidOperationException)
@@ -91,17 +87,18 @@ public class ProductController : ControllerBase
 
     // Crear nuevo producto
     [HttpPost("insertProduct")]
-    public async Task<ActionResult<ProductDto>> InsertNewProduct([FromBody] ProductDto productDto)
+    public async Task<ActionResult<ProductDto>> InsertNewProduct([FromForm] ProductDto productDto)
     {
+        if (productDto == null)
+        {
+            return BadRequest("El producto no puede ser nulo.");
+        }
 
-        // No necesita verificar si ya existe un producto con la misma id ya que se genera automáticamente
+        var newProduct = await _productService.InsertProductAsync(productDto);
 
-        var product = _productMapper.ProductDtoToProduct(productDto);           // Convierte de ProductDto a Product
+        var newProductDto = _productMapper.ProductToDto(newProduct);
 
-        var newProduct = await _productService.InsertProductAsync(product);     // Usa la lógica del servicio
+        return Ok(newProductDto);
 
-        var newProductDto = _productMapper.ProductToDto(newProduct);            // Vuelve a convertir de Product a ProductDto
-
-        return Ok(newProductDto); // Quizá deberíamos usar un CreatedAtAction() en lugar de Ok()
     }
 }

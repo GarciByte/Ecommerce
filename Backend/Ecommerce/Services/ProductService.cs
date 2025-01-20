@@ -1,11 +1,6 @@
-﻿using Ecommerce.Helpers;
-using Ecommerce.Models.Database;
+﻿using Ecommerce.Models.Database;
 using Ecommerce.Models.Database.Entities;
-using Ecommerce.Models.Database.Repositories.Implementations;
 using Ecommerce.Models.Dtos;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
-using System.Reflection;
 
 namespace Ecommerce.Services;
 
@@ -24,8 +19,6 @@ public class ProductService
     {
         return await _unitOfWork.ProductRepository.GetAllProductsAsync();
     }
-
-
     public async Task<Product> GetProductByIdAsync(int id)
     {
         return await _unitOfWork.ProductRepository.GetProductById(id);
@@ -128,10 +121,14 @@ public class ProductService
     }
 
     // Crear un nuevo producto
-    public async Task<Product> InsertProductAsync(Product product)
+    public async Task<Product> InsertProductAsync(ProductDto product)
     {
-        var maxIdProduct = await _unitOfWork.ProductRepository.GetMaxIdProductAsync();
 
+        // var relativePath = await SaveImageAsync(product.Image);
+
+        //var maxIdProduct = await _unitOfWork.ProductRepository.GetMaxIdProductAsync();
+
+        /*
         if (maxIdProduct != null) // Asigna el nuevo ID como el mayor ID + 1
         {
             product.Id = maxIdProduct.Id + 1;
@@ -141,16 +138,17 @@ public class ProductService
             product.Id = 1;
         }
 
+
         // Verifica si el producto ya existe
         var existingProduct = await GetProductByIdAsync(product.Id);
         if (existingProduct != null)
         {
             throw new Exception("El producto ya existe.");
         }
+        */
 
         var newProduct = new Product
         {
-            Id = product.Id, // Se le asigna la ID de arriba (la máxima + 1)
             Name = product.Name,
             Price = product.Price,
             Stock = product.Stock,
@@ -168,5 +166,30 @@ public class ProductService
     {
         _unitOfWork.ProductRepository.Update(product);
         await _unitOfWork.SaveAsync();
+    }
+
+    private async Task<string> SaveImageAsync(CreateUpdateImageRequest imageRequest)
+    {
+        if (imageRequest?.File == null)
+        {
+            return null;
+        }
+
+        var folderPath = Path.Combine("wwwroot", "products");
+
+        if (!Directory.Exists(folderPath))
+        {
+            Directory.CreateDirectory(folderPath);
+        }
+
+        var uniqueFileName = $"{Guid.NewGuid()}_{imageRequest.File.FileName}";
+        var filePath = Path.Combine(folderPath, uniqueFileName);
+
+        using (var stream = new FileStream(filePath, FileMode.Create))
+        {
+            await imageRequest.File.CopyToAsync(stream);
+        }
+
+        return $"/products/{uniqueFileName}";
     }
 }

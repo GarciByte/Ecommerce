@@ -1,10 +1,8 @@
 ﻿using Ecommerce.Models.Dtos;
-using Ecommerce.Services.Blockchain;
-using System.Numerics;
 using Nethereum.Contracts;
 using Nethereum.Hex.HexTypes;
 using Nethereum.Web3;
-using Examples.WebApi.Models.Dtos;
+using System.Numerics;
 
 namespace Ecommerce.Services.Blockchain;
 

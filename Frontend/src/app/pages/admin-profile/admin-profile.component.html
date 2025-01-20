@@ -1,86 +1,175 @@
-<!-- NAV BAR -->
 <app-nav></app-nav>
 
-<!-- FIRST BLOCK WITH IMAGE AND SLOGAN -->
-<div class="panel-top h-24rem d-flex w-full">
+<div class="panel-top h-16rem d-flex w-full">
     <p class="m-auto text-white line-height-4 text-6xl uppercase font-bold">
-        - MI PERFIL (ADMINISTRADOR) -
+        - MI PERFIL -
     </p>
 </div>
 
-<!-- User Admin Info -->
-<div class="profile-info">
-    <div class="profile-row">
-        <div class="profile-label">Nombre:</div>
-        <div class="profile-input">
-            <input type="text" [value]="user?.name" [readonly]="!isEditing">
+<br><br>
+
+<!-- User Info -->
+<fieldset>
+    <legend>Perfil de {{user.role}}</legend>
+    <form (ngSubmit)="onSubmit()" [formGroup]="userForm">
+
+        <div class="profile-row">
+            <label for="name">Nombre:
+                <input type="text" [value]="user?.name" formControlName="name" [readonly]="!isEditing">
+            </label>
         </div>
-    </div>
-    <div class="profile-row">
-        <div class="profile-label">Correo:</div>
-        <div class="profile-input">
-            <input type="text" [value]="user?.email" [readonly]="!isEditing">
+        <br>
+        <div class="profile-row">
+            <label for="email">Correo:
+                <input id="email" type="email" formControlName="email" [readonly]="!isEditing" [value]="user?.email" />
+            </label>
         </div>
-    </div>
-    <div class="profile-row">
-        <div class="profile-label">Rol:</div>
-        <div class="profile-input">
-            <input type="text" [value]="user?.role" [readonly]="!isEditing">
+        <br>
+        <div class="profile-row">
+            <label for="address">Dirección:
+                <input id="address" type="text" formControlName="address" [readonly]="!isEditing"
+                    [value]="user?.address" />
+            </label>
         </div>
-    </div>
-    <div class="profile-row">
-        <div class="profile-label">Dirección:</div>
-        <div class="profile-input">
-            <input type="text" [value]="user?.address" [readonly]="!isEditing">
+        <div class="profile-row-buttons">
+            <button type="button" [ngClass]="isEditing ? 'btn-edit' : 'btn-secondary'" class="btn btn-secondary"
+                (click)="edit()">
+                {{ isEditing? 'Cancelar edición' : 'Editar' }}
+            </button>
+            <button type="submit" class="btn btn-primary" [hidden]="!isEditing || userForm.invalid">
+                Guardar Cambios
+            </button>
         </div>
     </div>
     <div class="profile-row">
         <div class="profile-label">Contraseña:</div>
         <div class="profile-input">
-            <input type="password" [value]="123456" [readonly]="!isEditing">
+            <input type="text" [value]="" [readonly]="!isEditing">
         </div>
     </div>
 </div>
 
-<hr class="line-separator">
-
-<!-- User and Product Lists 
-<div class="lists-container d-flex justify-content-between">
-    
-    <div class="user-list">
-        <h3 class="list-title">Lista de usuarios</h3>
-        <ul class="list">
-            @for (let user of users) {
-            <li class="list-item">
-                <div class="user-icon"></div>
-                <div class="user-info">
-                    <span class="user-name">{{ user.name }}</span>
-                    <span class="user-email">{{ user.email }}</span>
-                </div>
-                <span class="user-role">{{ user.role }}</span>
-                <button class="edit-btn">✎</button>
-            </li>
+<div class="container">
+    <div class="table-list">
+        <h3>Lista de usuarios</h3>
+        <table>
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Email</th>
+                <th>Rol</th>
+                <th>Acción</th>
+            </tr>
+            @for (user of users; track $index) {
+            <tr>
+                <td>{{user.userId}}</td>
+                <td>{{user.name}}</td>
+                <td>{{user.email}}</td>
+                <td>
+                    <select name="Rol" [id]="user.userId" [(ngModel)]="user.role">
+                        <option value="Admin">Admin</option>
+                        <option value="User">User</option>
+                    </select>
+                </td>
+                <td>
+                    <button class="edit-btn" (click)="modifyUserRole(user.userId, user.role)">✎Actualizar</button> |
+                    <button class="edit-btn" (click)="deleteUser(user.userId)">Eliminar</button>
+                </td>
+            </tr>
             }
-        </ul>
+        </table>
     </div>
 
-    
-    <div class="product-list">
-        <h3 class="list-title">Lista de productos</h3>
-        <ul class="list">
-            @for (let product of products) {
-            <li class="list-item">
-                <div class="product-icon">P</div>
-                <div class="product-info">
-                    <span class="product-name">{{ product.name }}</span>
-                    <span class="product-stock">{{ product.stock }} uds</span>
-                </div>
-                <span class="product-price">{{ product.price }}€/ud</span>
-            </li>
-            }
-        </ul>
+    <div id="newProduct" [hidden]="isInsertProductHidden">
+        <fieldset class="formularioProducto">
+            <h3 class="new-product-title">Crear nuevo producto</h3>
+
+            <form (ngSubmit)="insertProduct()" [formGroup]="newProductForm"><br>
+                <input type="text" formControlName="productName" placeholder="Nombre"
+                    [(ngModel)]="insertProductName" /><br><br>
+                <input type="number" formControlName="productPrice" placeholder="Precio"
+                    [(ngModel)]="insertProductPrice" /><br><br>
+                <input type="number" formControlName="productStock" placeholder="Stock"
+                    [(ngModel)]="insertProductStock" /><br><br>
+                <input type="text" formControlName="productDescription" placeholder="Descripción"
+                    [(ngModel)]="insertProductDescription" /><br><br>
+                @if (rutaImgNewProduct) {
+                <img width="50px" [src]="IMG_URL + rutaImgNewProduct">
+                <input type="text" [placeholder]="rutaImgNewProduct" class="w-8" disabled><br><br>
+                }
+                <input type="button" (click)="addImage()" value="Añadir imagen" id="addImageButton"><br><br>
+                <button type="submit" [disabled]="newProductForm.invalid">Crear producto</button>
+            </form>
+        </fieldset>
     </div>
+
+    <dialog #addEditDialog>
+        <form [formGroup]="addOrEditForm" (ngSubmit)="createOrUpdateImage()">
+            <label>
+                Name:
+                <input type="text" formControlName="name" />
+            </label>
+            <br>
+            <label>
+                Imagen:
+                <input type="file" accept="image/png, image/jpeg, image/jpg" (change)="onFileSelected($event)" />
+            </label>
+            <br>
+            <button type="button" (click)="closeDialog(addOrEditDialog)">Cancelar</button>
+            <input type="submit" [disabled]="addOrEditForm.valid" />
+        </form>
+    </dialog>
+
+    <div class="table-list">
+        <h3 class="list-title">
+            Lista de productos
+            <button (click)="showInsertProductForm()">Nuevo producto</button>
+        </h3>
+        <table>
+            <tr>
+                <th>ID</th>
+                <th>Imagen</th>
+                <th>Nombre</th>
+                <th>Precio</th>
+                <th>Stock</th>
+                <th>Acción</th>
+            </tr>
+            @for (product of products; track $index) {
+            <tr>
+                <td>{{product.id}}</td>
+                <td> <img [src]="IMG_URL + product.image"></td>
+                <td>{{product.name}}</td>
+                <td>{{product.price/100}}€</td>
+                <td>{{product.stock}} uds.</td>
+                <td><button (click)="showEditProductForm(product)" class="edit-btn">✎Edit</button></td>
+            </tr>
+            }
+        </table>
+    </div>
+
+    @if (selectedProduct) {
+    <div id="editProduct" [hidden]="isEditProductHidden">
+        <fieldset class="formularioProducto">
+            <h3 class="new-product-title">Editar producto {{selectedProduct.id}}</h3>
+            <form (ngSubmit)="editProduct(selectedProduct.id)" [formGroup]="editProductForm"> <br>
+                <span>Nombre:</span>
+                <input type="text" formControlName="name" placeholder="Nuevo nombre" /> <br><br>
+                <span>Precio:</span>
+                <input type="number" min="0" formControlName="price" placeholder="Nuevo precio" /><br><br>
+                <span>Stock:</span>
+                <input type="number" formControlName="stock" placeholder="Nuevo stock" min="0" /><br><br>
+                <span>Descripción:</span>
+                <input type="text" formControlName="description" placeholder="Nueva descripción" /> <br><br>
+                <span>Imagen:</span>
+                <img width="50px" [src]="IMG_URL + rutaImgModifyProduct">
+                <input type="text" [value]="rutaImgModifyProduct" disabled><br><br>
+                <input type="button" (click)="addImage()" value="Cambiar imagen" id="addImageButton"><br><br>
+                <button type="submit">Confirmar cambios</button>
+
+            </form>
+        </fieldset>
+    </div>
+    }
 </div>
--->
-<app-footer></app-footer>
 
+<app-footer></app-footer>

@@ -25,7 +25,8 @@ export class SignupComponent implements OnInit {
     private authService: AuthService,
     private activatedRoute: ActivatedRoute,
     private router: Router,
-    private cartApi: CartService
+    private cartApi: CartService,
+    private cartService: CartService
   ) {
     this.myForm = this.formBuilder.group({
       name: ['', Validators.required],
@@ -69,23 +70,16 @@ export class SignupComponent implements OnInit {
       const signupResult = await this.authService.signup(formData); // Registro
 
       if (signupResult.success) {
-        console.log('Registro exitoso', signupResult);
-
-        // creo carrito para usuario
-        this.cartApi.createCart(signupResult.data.userId).subscribe({
-          next: (response) => {
-            console.log('Carrito creado exitosamente:', response);
-          },
-          error: (err) => {
-            console.error('Error al crear el carrito:', err);
-          },
-        });
+        //console.log('Registro exitoso', signupResult);      
 
         const authData = { email: formData.email, password: formData.password };
         const loginResult = await this.authService.login(authData, false);
 
         if (loginResult.success) {
-          console.log('Inicio de sesión exitoso', loginResult);
+          //console.log('Inicio de sesión exitoso', loginResult);
+
+          // Notificar el cambio en la cantidad de productos del carrito
+          this.cartService.notifyCartChange();
 
           const user = this.authService.getUser();
           const name = user ? user.name : null;

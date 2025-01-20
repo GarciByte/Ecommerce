@@ -1,10 +1,7 @@
 ﻿using Ecommerce.Models.Database.Entities;
+using Ecommerce.Models.Dtos;
 using Ecommerce.Services;
 using Microsoft.AspNetCore.Mvc;
-using Ecommerce.Models.Dtos;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 
 namespace Ecommerce.Controllers;
 
@@ -20,7 +17,6 @@ public class TemporalOrderController : ControllerBase
         _temporalOrderService = temporalOrderService;
         _userService = userService;
     }
-
 
     // obtener por id la orden temporal DTO
     [HttpGet("{id}")]
@@ -67,7 +63,6 @@ public class TemporalOrderController : ControllerBase
     }
 
 
-    // hay que hacer dos metodos , uno si esta loguqeado (q recibe el jwt) y otro si no lo esta que recibe el carrito del localstorage
 
     // si lo recibe del front: recibe un array de productCart y el metodo de pago
 
@@ -87,7 +82,7 @@ public class TemporalOrderController : ControllerBase
         {
             return Conflict($"No pudo crearse la order temporal: {e.Message}");
         }
-        
+
     }
 
 
@@ -115,7 +110,7 @@ public class TemporalOrderController : ControllerBase
 
     // Refrescar orden temporal
     [HttpGet("refresh-order")]
-    public async Task<ActionResult> RefreshOrder([FromQuery]int temporalOrderId)
+    public async Task<ActionResult> RefreshOrder([FromQuery] int temporalOrderId)
     {
         TemporalOrder temporalOrder = await _temporalOrderService.GetOrderByIdAsync(temporalOrderId);
         if (temporalOrder == null)

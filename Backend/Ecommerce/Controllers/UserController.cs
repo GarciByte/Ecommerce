@@ -1,6 +1,4 @@
-﻿using Ecommerce.Models;
-using Ecommerce.Models.Database.Entities;
-using Ecommerce.Models.Database.Repositories.Implementations;
+﻿using Ecommerce.Models.Database.Entities;
 using Ecommerce.Models.Dtos;
 using Ecommerce.Models.Mappers;
 using Ecommerce.Services;
@@ -20,20 +18,6 @@ namespace Ecommerce.Controllers
         {
             _userService = userService;
             _userMapper = userMapper;
-        }
-
-        // devuelve un usuario buscado por email
-        [HttpGet("/email/{email}")]
-        public async Task<IActionResult> GetByEmailAsync(string email)
-        {
-            var user = await _userService.GetUserByEmailAsync(email);
-
-            if (user == null) // si no se encuentra el correo
-            {
-                return NotFound(new { message = $"El usuario con el correo: '{email}' no ha sido encontrado." });
-            }
-
-            return Ok(user);
         }
 
         [HttpGet("{id}")]
@@ -68,12 +52,15 @@ namespace Ecommerce.Controllers
 
             if (userData == null)
             {
+                Console.WriteLine("Token inválido o usuario no encontrado.");
                 return BadRequest("El usuario es null");
             }
 
+            Console.WriteLine($"Usuario autenticado: ID = {userData.UserId}, Email = {userData.Email}");
+            userDto.UserId = userData.UserId;
             try
             {
-                await _userService.ModifyUserAsync(userData);
+                await _userService.ModifyUserAsync(userDto);
                 return Ok("Usuario actualizado correctamente.");
             }
             catch (InvalidOperationException)
@@ -83,13 +70,13 @@ namespace Ecommerce.Controllers
         }
 
         // Solo pueden usar este método los usuarios cuyo rol sea admin
-        //[Authorize(Roles = "Admin")] Descomentar esto cuando esté implementado en front (en swagger no se puede probar)
-        [HttpPut("modifyUserRole/{userId}")]
-        public async Task<IActionResult> ModifyUserRole(int userId, string newRole)
+        [Authorize(Roles = "Admin")]
+        [HttpPut("modifyUserRole")]
+        public async Task<IActionResult> ModifyUserRole(ModifyRoleRequest request)
         {
 
             // Obtener datos del usuario
-            UserDto userData = await _userService.GetUserByIdAsync(userId);
+            UserDto userData = await _userService.GetUserByIdAsync(request.UserId);
 
             if (userData == null)
             {
@@ -98,9 +85,9 @@ namespace Ecommerce.Controllers
 
             try
             {
-                if (newRole == "User" || newRole == "Admin")
+                if (request.NewRole == "User" || request.NewRole == "Admin")
                 {
-                    await _userService.ModifyUserRoleAsync(userId, newRole);
+                    await _userService.ModifyUserRoleAsync(request.UserId, request.NewRole);
                     return Ok("Rol de usuario actualizado correctamente.");
                 }
                 else
@@ -115,7 +102,41 @@ namespace Ecommerce.Controllers
             }
         }
 
+        [Authorize]
+        [HttpPut("modifyPassword")]
+        public async Task<IActionResult> ModifyPassword([FromBody] NewPasswordDto newPasswordRequest)
+        {       
+
+            if(newPasswordRequest == null)
+            {
+                return BadRequest("La nueva contraseña es nula.");
+            }
+
+            // Obtener datos del usuario para modificarse a si mismo
+            UserProfileDto userData = await ReadToken();
+
+            if (userData == null)
+            {
+                Console.WriteLine("Token inválido o usuario no encontrado.");
+                return BadRequest("El usuario es null");
+            }
+
+            Console.WriteLine($"Usuario autenticado: ID = {userData.UserId}, Email = {userData.Email}");
+
+            try
+            {
+                await _userService.ModifyPasswordAsync(userData.UserId, newPasswordRequest.newPassword);
+                return Ok("Contraseña actualizada correctamente.");
+            }
+            catch (InvalidOperationException)
+            {
+                return BadRequest("No pudo modificarse la contraseña.");
+            }
+        }
+
+
         // Elimina un usuario
+        [Authorize(Roles = "Admin")]
         [HttpDelete("deleteUser/{userId}")]
         public async Task<IActionResult> DeleteUser(int userId)
         {

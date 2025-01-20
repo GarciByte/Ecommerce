@@ -1,5 +1,4 @@
 ﻿using Ecommerce.Models.Database.Entities;
-using Ecommerce.Models.Dtos;
 using Ecommerce.Models.Mappers;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,23 +12,6 @@ namespace Ecommerce.Models.Database.Repositories.Implementations
         {
             _cartMapper = new CartMapper();
         }
-
-        // devuelve el carrito del usuario
-        //public async Task<CartDto> GetCartByUserId(int id)
-        //{
-        //    var cart = await GetQueryable()
-        //        .Include(cart => cart.ProductCarts)
-        //        .ThenInclude(pc => pc.Product)
-        //        .FirstOrDefaultAsync(cart => cart.UserId == id);
-
-        //    if (cart == null)
-        //    {
-        //        Console.WriteLine($"No se encontró carrito para el usuario con ID {id}."); // Log
-        //        throw new InvalidOperationException("El carrito no se encontró para este usuario.");
-        //    }
-
-        //    return _cartMapper.CartToDto(cart);
-        //}
 
         // devuelve el precio total
         public async Task<double> GetTotalPrice(int cartId)
@@ -47,8 +29,8 @@ namespace Ecommerce.Models.Database.Repositories.Implementations
 
             // suma precios de los productos en el carrito
             double totalPrice = cart.ProductCarts
-                .Where(pc => pc.Product?.Price > 0 && pc.Quantity > 0) 
-                .Sum(pc => (pc.Product.Price  * pc.Quantity) / 100);
+                .Where(pc => pc.Product?.Price > 0 && pc.Quantity > 0)
+                .Sum(pc => (pc.Product.Price * pc.Quantity) / 100);
 
             return totalPrice;
         }

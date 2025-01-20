@@ -15,12 +15,34 @@ public class TemporalOrderRepository : Repository<TemporalOrder, int>
         _temporalOrderMapper = new TemporalOrderMapper();
     }
 
+    public async Task<List<TemporalOrder>> GetTemporalOrderByUser(int id)
+    {
+        return await GetQueryable()
+            .Where(TemporalOrder => TemporalOrder.UserId == id).ToListAsync();
+    }
+
 
     // obtener orden temporal segun id
     public async Task<TemporalOrder> GetTemporalOrderById(int id)
     {
         var temporalOrder = await GetQueryable()
             .Include(t => t.User)
+            .Include(t => t.TemporalProductOrder)
+            .ThenInclude(p => p.Product)
+            .FirstOrDefaultAsync(t => t.Id == id);
+
+        if (temporalOrder == null)
+        {
+            throw new InvalidOperationException("La orden temporal no se encontró para esta id.");
+        }
+
+
+        return temporalOrder;
+    }
+
+    public async Task<TemporalOrder> GetTemporalOrderByIdWithoutuser(int id)
+    {
+        var temporalOrder = await GetQueryable()
             .Include(t => t.TemporalProductOrder)
             .ThenInclude(p => p.Product)
             .FirstOrDefaultAsync(t => t.Id == id);
@@ -50,10 +72,11 @@ public class TemporalOrderRepository : Repository<TemporalOrder, int>
             PaymentMethod = paymentMethod,
             TotalPrice = total,
             TemporalProductOrder = new List<TemporalProductOrder>(),
-            ExpiresAt = DateTime.UtcNow.AddMinutes(15) // expira en 15 minutos
+            ExpiresAt = DateTime.UtcNow.AddMinutes(15), // expira en 15 minutos
+            Express = true
         };
 
-        // generar el id de la orden temporal
+        
         _context.TemporalOrder.Add(newTemporalOrder);
         await _context.SaveChangesAsync();
 
@@ -64,7 +87,7 @@ public class TemporalOrderRepository : Repository<TemporalOrder, int>
             {
                 Quantity = cartItem.Quantity,
                 ProductId = cartItem.Product.Id,
-                TemporalOrderId = newTemporalOrder.Id // id generado
+                TemporalOrderId = newTemporalOrder.Id 
             };
             newTemporalOrder.TemporalProductOrder.Add(temporalProductOrder);
         }
@@ -94,11 +117,12 @@ public class TemporalOrderRepository : Repository<TemporalOrder, int>
             {
                 Quantity = pc.Quantity,
                 ProductId = pc.Product.Id,
-                Product = null // se asigna luego
+                Product = null 
             }).ToList(),
-            User = null, //  recibo un dto, habria que asignarlo desde el token !!
+            User = null,
 
-            ExpiresAt = DateTime.UtcNow.AddMinutes(2) // expira en 2 minutos
+            ExpiresAt = DateTime.UtcNow.AddMinutes(15), // expira en 15 minutos
+            Express = false
         };
 
         var insertedTemporalOrder = await InsertAsync(newTemporalOrder);

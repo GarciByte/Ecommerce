@@ -1,6 +1,5 @@
 ﻿using Ecommerce.Models.Database.Entities;
 using Ecommerce.Models.Dtos;
-using System.Collections.Generic;
 
 namespace Ecommerce.Models.Mappers;
 
@@ -36,7 +35,7 @@ public class OrderMapper
                 OrderId = pc.OrderId,
                 ProductId = pc.ProductId,
                 Quantity = pc.Quantity,
-                // añadir pricePay PricePay = pc.Product.Price
+                PricePay = pc.Product.Price,
                 Product = new Product
                 {
                     Id = pc.Product.Id,

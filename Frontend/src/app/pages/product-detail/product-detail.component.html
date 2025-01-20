@@ -2,22 +2,23 @@
 
 
 @if (product) {
-<div class="container flex flex-wrap justify-content-center m-8 ">
+<div class="container">
 
     <!--imagen producto-->
-    <section class="imageProduct w-3 m-auto">
+    <section class="imageProduct m-auto">
         <img [src]="IMG_URL + product.image" class="m-auto w-full">
     </section>
 
     <!-- info del producto -->
-    <section class="infoProduct w-6">
+    <section class="infoProduct">
         <h1>{{product.name}}</h1>
+        <p class="numRef">Número de artículo: {{product.id}}</p>
         <span class="price">{{product.price/100}}€</span>
         <p>{{product.description}}</p>
 
         <p class="text-sm text-indigo-500">{{product.stock}} en stock</p>
         <div class="inputQuantity">
-            <p-inputNumber [(ngModel)]="quantity" class="w-full" [showButtons]="true" buttonLayout="horizontal"
+            <p-inputNumber [(ngModel)]="quantity"  [showButtons]="true" buttonLayout="horizontal"
                 inputId="horizontal" spinnerMode="horizontal" [step]="1" [min]="1" [max]="product.stock"
                 allowEmpty=false decrementButtonClass="p-button-secondary" incrementButtonClass="p-button-secondary"
                 incrementButtonIcon="pi pi-plus" decrementButtonIcon="pi pi-minus" />
@@ -32,7 +33,7 @@
     </section>
 
 
-    <section class="w-full">
+    <section>
         <h1>Reseñas</h1>
         <p>{{reviews.length}} reseñas. Media:
             <span>
@@ -53,10 +54,10 @@
         <p *ngIf="!authService.isAuthenticated()">
             Para poder escribir una reseña debe 
             <a [routerLink]="'/login'" [queryParams]="{ redirectTo: router.url }">iniciar sesión.</a>
-          </p>
+        </p>
 
         <!-- FORMULARIO PARA HACER RESEÑA -->
-        <div *ngIf="authService.isAuthenticated() && !hasComment">
+        <div *ngIf="authService.isAuthenticated() && hasPurchased && !hasComment">
             <p>Añade una reseña:</p>
             <form (ngSubmit)="publicReview()">
                 <textarea class="w-full" rows="10" pInputText [(ngModel)]="textReview"
@@ -71,14 +72,19 @@
             <p class="font-bold">Ya has dejado una reseña para este producto. ¡Gracias por tu opinión!</p>
         </div>
 
+        <!-- Si el usuario no ha comprado el producto -->
+        <div *ngIf="authService.isAuthenticated() && !hasPurchased">
+            <p class="font-bold">Para poder dejar una reseña, debes haber comprado este producto.</p>
+        </div>
+
 
         <br>
 
         @for (review of reviews; track review.reviewId) {
         <div class="review">
             <!-- nombre usuario que ha comentado-->
-            @for (user of users; track user.id) {
-            @if(user.id == review.userId){
+            @for (user of users; track user.userId) {
+            @if(user.userId == review.userId){
             <span class="font-bold">👤{{user.name}}</span>
             }
             }

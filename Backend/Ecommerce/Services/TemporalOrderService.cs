@@ -1,7 +1,7 @@
-﻿using Ecommerce.Models.Database.Entities;
-using Ecommerce.Models.Database;
-using Ecommerce.Models.Mappers;
+﻿using Ecommerce.Models.Database;
+using Ecommerce.Models.Database.Entities;
 using Ecommerce.Models.Dtos;
+using Ecommerce.Models.Mappers;
 
 namespace Ecommerce.Services;
 
@@ -18,7 +18,7 @@ public class TemporalOrderService
     // obtener por id dto
     public async Task<TemporalOrderDto> GetDtoByIdAsync(int id)
     {
-        if (id <= 0 ) throw new ArgumentException("El ID no es válido.");
+        if (id <= 0) throw new ArgumentException("El ID no es válido.");
 
         var temporalOrder = await _unitOfWork.TemporalOrderRepository.GetTemporalOrderById(id);
 
@@ -36,6 +36,20 @@ public class TemporalOrderService
         if (id <= 0) throw new ArgumentException("El ID no es válido.");
 
         var temporalOrder = await _unitOfWork.TemporalOrderRepository.GetTemporalOrderById(id);
+
+        if (temporalOrder == null)
+        {
+            return null;
+        }
+        return temporalOrder;
+
+    }
+
+    public async Task<TemporalOrder> GetByIdAsyncWithoutUser(int id)
+    {
+        if (id <= 0) throw new ArgumentException("El ID no es válido.");
+
+        var temporalOrder = await _unitOfWork.TemporalOrderRepository.GetTemporalOrderByIdWithoutuser(id);
 
         if (temporalOrder == null)
         {
@@ -63,14 +77,15 @@ public class TemporalOrderService
     // crear order temporal DESDE EL LOCAL
     public async Task<TemporalOrder> CreateTemporalOrderLocalAsync(ProductCartDto[] cart, string paymentMethod)
     {
-        
+
         if (paymentMethod == null || paymentMethod == "")
         {
             throw new InvalidOperationException("El método de pago no es válido");
         }
 
         // reserva de stock 
-        foreach (var cartItem in cart) {
+        foreach (var cartItem in cart)
+        {
 
             var product = await _unitOfWork.ProductRepository.GetByIdAsync(cartItem.ProductId);
 
@@ -122,7 +137,7 @@ public class TemporalOrderService
         temporalOrder.User = user;
         await _unitOfWork.SaveAsync();
 
-        return temporalOrder;   
+        return temporalOrder;
     }
 
     // para actualizar el stock y guardarlo

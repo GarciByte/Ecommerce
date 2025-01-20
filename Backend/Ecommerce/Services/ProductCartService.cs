@@ -1,9 +1,7 @@
 ﻿using Ecommerce.Models.Database;
 using Ecommerce.Models.Database.Entities;
-using Ecommerce.Models.Database.Repositories.Implementations;
 using Ecommerce.Models.Dtos;
 using Ecommerce.Models.Mappers;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Ecommerce.Services;
@@ -25,7 +23,7 @@ public class ProductCartService
         // comprueba si existe el carrito
         var cartExists = await _unitOfWork.CartRepository.GetQueryable()
         .AnyAsync(c => c.Id == productCartDto.CartId);
-        
+
         if (!cartExists)
         {
             throw new InvalidOperationException("El carrito no existe.");
@@ -47,7 +45,7 @@ public class ProductCartService
             throw new InvalidOperationException("El producto no se encuentra en el carrito.");
         }
 
-        _unitOfWork.ProductCartRepository.DeleteProductFromCartAsync(productCart);
+        await _unitOfWork.ProductCartRepository.Delete(productCart);
         await _unitOfWork.SaveAsync();
     }
 
@@ -73,7 +71,7 @@ public class ProductCartService
         // si al actualizar la cantidad es menor o igual a 0, se elimina
         if (productCart.Quantity <= 0)
         {
-            _unitOfWork.ProductCartRepository.DeleteProductFromCartAsync(productCart);
+            await _unitOfWork.ProductCartRepository.Delete(productCart);
         }
 
         await _unitOfWork.SaveAsync();

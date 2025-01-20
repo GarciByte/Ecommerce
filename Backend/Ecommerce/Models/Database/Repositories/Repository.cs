@@ -1,6 +1,5 @@
 ﻿using Ecommerce.Models.Database.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace Ecommerce.Models.Database.Repositories;
 
@@ -35,11 +34,6 @@ public abstract class Repository<TEntity, TId> : IRepository<TEntity, TId> where
         var entry = await _context.Set<TEntity>().AddAsync(entity);
         return entry.Entity;
     }
-
-    //public async Task<bool> SaveAsync()
-    //{
-    //    return await _context.SaveChangesAsync() > 0;
-    //}
 
     public TEntity Update(TEntity entity)
     {

@@ -9,6 +9,7 @@ import { FooterComponent } from "../../components/footer/footer.component";
 import { TemporalOrder } from '../../models/temporal-order';
 import { environment } from '../../../environments/environment';
 import { Order } from '../../models/order';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-checkout',
@@ -46,17 +47,17 @@ export class CheckoutComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void { // Verifica que la suscripción, el refresco y la sesión existen antes de destruirlos
     if (this.routeQueryMap$) {
       this.routeQueryMap$.unsubscribe();
-      console.log("Suscripción eliminada");
+     // console.log("Suscripción eliminada");
     }
 
     if (this.refreshInterval) {
       clearInterval(this.refreshInterval);
-      console.log("Intervalo eliminado");
+      //console.log("Intervalo eliminado");
     }
 
     if (this.stripeEmbedCheckout) {
       this.cancelCheckoutDialog();
-      console.log("Sesión eliminada");
+     // console.log("Sesión eliminada");
     }
   }
 
@@ -71,32 +72,34 @@ export class CheckoutComponent implements OnInit, OnDestroy {
 
     if (isNaN(this.temporalOrderId)) { // Comprueba que la ID no está vacía
       console.error("El ID de la Orden temporal no es válido: ", this.temporalOrderId);
+      this.throwError("Se ha producido un error procesando tu pedido.");
     }
 
     this.paymentMethod = queryMap.get("paymentMethod");
 
-    console.log("ID de la Orden temporal:", this.temporalOrderId);
-    console.log("Método de pago:", this.paymentMethod);
-    console.log("Acaba de iniciar sesión:", justLoggedIn);
+   // console.log("ID de la Orden temporal:", this.temporalOrderId);
+    //console.log("Método de pago:", this.paymentMethod);
+    //console.log("Acaba de iniciar sesión:", justLoggedIn);
 
     if (justLoggedIn) {
-      console.log("El usuario acaba de iniciar sesión. Vinculando la orden temporal...");
+     // console.log("El usuario acaba de iniciar sesión. Vinculando la orden temporal...");
       const linkResponse = await this.service.linkUserToOrder(this.temporalOrderId);
 
       if (linkResponse.success) {
-        console.log("La orden temporal se vinculó exitosamente:", linkResponse.data);
+      //  console.log("La orden temporal se vinculó exitosamente:", linkResponse.data);
       } else {
         console.error("Error al vincular la orden temporal:", linkResponse.error);
+        this.throwError("Se ha producido un error procesando tu pedido.");
       }
     }
 
-    console.log("Recuperando los detalles de la orden temporal...");
+   // console.log("Recuperando los detalles de la orden temporal...");
     const orderResponse = await this.service.getOrderDetails(this.temporalOrderId);
 
     if (orderResponse.success) {
       this.orderDetails = orderResponse.data;
-      console.log("Detalles de la orden cargados:", this.orderDetails);
-      console.log("Productos:", this.orderDetails.temporalProductOrder);
+     // console.log("Detalles de la orden cargados:", this.orderDetails);
+      //console.log("Productos:", this.orderDetails.temporalProductOrder);
       this.startOrderRefresh(); // refresco de la orden
 
       // pago
@@ -105,31 +108,34 @@ export class CheckoutComponent implements OnInit, OnDestroy {
         await this.embeddedCheckout();
       } else {
         console.error("El método de pago no es en stripe");
+        this.throwError("Se ha producido un error procesando tu pedido.");
       }
 
     } else {
       console.error("Error al cargar los detalles de la orden:", orderResponse.error);
+      this.throwError("Se ha producido un error procesando tu pedido.");
     }
   }
 
   // Refrescar la orden orden temporal
   startOrderRefresh() {
-    console.log("Iniciando el refresco de la orden temporal...");
+   // console.log("Iniciando el refresco de la orden temporal...");
     this.refreshInterval = setInterval(async () => {
       const refreshResponse = await this.service.refreshOrder(this.temporalOrderId);
       if (refreshResponse.success) {
-        console.log("Orden temporal refrescada correctamente.");
+     //   console.log("Orden temporal refrescada correctamente.");
       } else {
         console.error("Error al refrescar la orden temporal:", refreshResponse.error);
+        this.throwError("Se ha producido un error procesando tu pedido.");
       }
     }, 60000); // Se refresca cada minuto
   }
 
   // Checkout embebido de Stripe
   async embeddedCheckout() {
-    console.log("Iniciando el checkout embebido de Stripe...");
+    //console.log("Iniciando el checkout embebido de Stripe...");
     try {
-      const request = await this.service.getEmbededCheckout();
+      const request = await this.service.getEmbededCheckout(this.temporalOrderId);
       if (request.success) {
         const options: StripeEmbeddedCheckoutOptions = {
           clientSecret: request.data.clientSecret,
@@ -143,19 +149,30 @@ export class CheckoutComponent implements OnInit, OnDestroy {
           },
           error: (err) => {
             console.error("Error al inicializar el checkout embebido:", err);
+            this.throwError("Se ha producido un error procesando tu pedido.");
           }
         });
       } else {
         console.error("Error al iniciar el checkout embebido:", request.error);
+        this.throwError("Se ha producido un error procesando tu pedido.");
       }
     } catch (err) {
       console.error("Error en el proceso de checkout:", err);
+      this.throwError("Se ha producido un error procesando tu pedido.");
     }
   }
 
   orderOnComplete() {
-    console.log("Orden completada");
-    alert('Transacción realizada con éxito');
+    //console.log("Orden completada");
+
+    Swal.fire({ // Cuadro de diálogo
+      title: "Transacción realizada con éxito",
+      text: "¡Gracias por tu compra!",
+      icon: "success",
+      showConfirmButton: false,
+      timer: 3000,
+      timerProgressBar: true
+    });
 
     // creo pedido 
     this.service.newOrder(this.temporalOrderId).subscribe({
@@ -169,6 +186,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         console.error('Error al crear el pedido:', err);
+        this.throwError("Se ha producido un error procesando tu pedido.");
       },
     });
   }
@@ -178,4 +196,16 @@ export class CheckoutComponent implements OnInit, OnDestroy {
       this.stripeEmbedCheckout.destroy();
     }
   }
+
+  // Cuadro de diálogo de error
+  throwError(error: string) {
+    Swal.fire({ 
+      title: "Se ha producido un error",
+      text: error,
+      icon: "error",
+      confirmButtonText: "Volver a inicio",
+      didClose: () => this.router.navigate(['/'])
+    });
+  }
+
 }

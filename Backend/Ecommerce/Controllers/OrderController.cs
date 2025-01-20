@@ -1,9 +1,6 @@
-﻿using Ecommerce.Models.Database.Repositories.Implementations;
+﻿using Ecommerce.Models.Database.Entities;
 using Ecommerce.Services;
-using Ecommerce.Models.Database.Entities;
 using Microsoft.AspNetCore.Mvc;
-using Stripe;
-using Ecommerce.Models.Dtos;
 
 namespace Ecommerce.Controllers;
 
@@ -12,15 +9,17 @@ namespace Ecommerce.Controllers;
 public class OrderController : ControllerBase
 {
     private readonly OrderService _orderService;
-
-    public OrderController(OrderService orderService)
+    private readonly UserService _userService;
+    public OrderController(UserService userService, OrderService orderService)
     {
         _orderService = orderService;
+        _userService = userService;
     }
 
     [HttpGet("byUser/{id}")]
     public async Task<IActionResult> GetOrdersByUser(int id)
     {
+
         var orders = await _orderService.GetOrderByUser(id);
 
         if (orders == null || orders.Count == 0)
@@ -60,5 +59,4 @@ public class OrderController : ControllerBase
         }
 
     }
-
 }

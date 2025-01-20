@@ -1,13 +1,14 @@
-﻿ namespace Ecommerce.Services
+﻿namespace Ecommerce.Services
 {
-    using System.Globalization;
-    using System.Text;
     using F23.StringSimilarity;
     using F23.StringSimilarity.Interfaces;
+    using System.Globalization;
+    using System.Text;
 
     public class SmartSearchService
     {
         private const double THRESHOLD = 0.75;
+
         private static readonly string[] ITEMS = [
             "GPS",
             "Localizador",
@@ -24,7 +25,7 @@
             "Paquetes",
             "Lote",
             "Lora"
-            
+
         ];
 
         private readonly INormalizedStringSimilarity _stringSimilarityComparer;

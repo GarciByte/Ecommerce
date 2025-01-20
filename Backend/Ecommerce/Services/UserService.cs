@@ -1,12 +1,8 @@
-﻿using Ecommerce.Controllers;
-using Ecommerce.Helpers;
+﻿using Ecommerce.Helpers;
 using Ecommerce.Models.Database;
 using Ecommerce.Models.Database.Entities;
-using Ecommerce.Models.Database.Repositories.Implementations;
 using Ecommerce.Models.Dtos;
 using Ecommerce.Models.Mappers;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
 
 
 namespace Ecommerce.Services;
@@ -94,10 +90,13 @@ public class UserService
 
         await _unitOfWork.UserRepository.InsertUserAsync(newUser);
         await _unitOfWork.SaveAsync();
+        // crea carrito para usuario
+        await _unitOfWork.CartRepository.InsertCartAsync(newUser.Id);
+        await _unitOfWork.SaveAsync();
 
         return newUser;
     }
-    
+
     // Modificar los datos del usuario
     public async Task ModifyUserAsync(UserProfileDto userDto)
     {
@@ -110,30 +109,23 @@ public class UserService
 
         Console.WriteLine("ID del usuario: " + existingUser.Id);
 
-        existingUser.Id = userDto.UserId;
-        existingUser.Role = userDto.Role;
-
-        if (!string.IsNullOrEmpty(userDto.Name))
+        if (!string.IsNullOrEmpty(userDto.Name) && existingUser.Name != userDto.Name)
         {
             existingUser.Name = userDto.Name;
         }
 
-        if (!string.IsNullOrEmpty(userDto.Email))
+        if (!string.IsNullOrEmpty(userDto.Email) && existingUser.Email != userDto.Email)
         {
             existingUser.Email = userDto.Email;
         }
 
-        if (!string.IsNullOrEmpty(userDto.Password))
-        {
-            existingUser.Password = userDto.Password;
-        }
-
-        if (!string.IsNullOrEmpty(userDto.Address))
+        if (!string.IsNullOrEmpty(userDto.Address) && existingUser.Address != userDto.Address)
         {
             existingUser.Address = userDto.Address;
         }
 
         await UpdateUser(existingUser);
+        Console.WriteLine("Usuario actualizado correctamente.", existingUser);
         await _unitOfWork.SaveAsync();
     }
 
@@ -143,9 +135,10 @@ public class UserService
     {
         var existingUser = await _unitOfWork.UserRepository.GetUserById(userId);
 
-        if (existingUser != null)
+
+        if (existingUser == null)
         {
-            Console.WriteLine("El usuario con ID ", userId, " no existe.");
+            throw new InvalidOperationException("Usuario con ID:" + userId + "no encontrado.");
         }
 
         Console.WriteLine("ID del usuario: " + existingUser.Id);
@@ -159,6 +152,32 @@ public class UserService
         await _unitOfWork.SaveAsync();
     }
 
+    // Modificar contraseña del usuario
+    public async Task ModifyPasswordAsync(int userId, string newPassword)
+    {
+        var existingUser = await _unitOfWork.UserRepository.GetUserById(userId);
+
+        if (existingUser != null)
+        {
+            Console.WriteLine("El usuario con ID ", userId, " no existe.");
+        }
+
+        if (!string.IsNullOrEmpty(newPassword) && existingUser.Password != PasswordHelper.Hash(newPassword))
+        {
+            existingUser.Password = PasswordHelper.Hash(newPassword);
+        }
+        else
+        {
+            Console.WriteLine("La contraseña es nula o similar a la anterior");
+        }
+
+        await UpdateUser(existingUser);
+        Console.WriteLine("Usuario actualizado correctamente.", existingUser);
+        await _unitOfWork.SaveAsync();
+    }
+
+
+
     // Eliminar usuario
     public async Task DeleteUserAsync(int userId)
     {
@@ -169,7 +188,30 @@ public class UserService
             throw new InvalidOperationException("El usuario no existe.");
         }
 
+        // elimina sus reseñas, ordenes y carrito
+        var cart = await _unitOfWork.CartRepository.GetCartByUserNoDto(user.Id);
+        var reviews = await _unitOfWork.ReviewRepository.GetReviewByUser(user.Id);
+        var temporals = await _unitOfWork.TemporalOrderRepository.GetTemporalOrderByUser(user.Id);
+        var orders = await _unitOfWork.OrderRepository.GetOrderByUser(user.Id);
+
+        if (cart != null)
+        {
+            await _unitOfWork.CartRepository.Delete(cart);
+        }
+        foreach (var t in temporals)
+        {
+            await _unitOfWork.TemporalOrderRepository.Delete(t);
+        }
+        foreach (var r in reviews)
+        {
+            await _unitOfWork.ReviewRepository.Delete(r);
+        }
+        foreach (var o in orders)
+        {
+            await _unitOfWork.OrderRepository.Delete(o);
+        }
         _unitOfWork.UserRepository.DeleteUser(user);
+
         await _unitOfWork.SaveAsync();
     }
     public async Task UpdateUser(User user)

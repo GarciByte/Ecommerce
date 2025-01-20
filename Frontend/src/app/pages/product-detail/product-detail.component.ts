@@ -15,6 +15,9 @@ import { CartService } from '../../services/cart.service';
 import { User } from '../../models/user';
 import { ReviewDto } from '../../models/reviewDto';
 import { ProductCart } from '../../models/productCart';
+import Swal from 'sweetalert2';
+import { Order } from '../../models/order';
+import { OrderService } from '../../services/order.service';
 
 
 @Component({
@@ -25,7 +28,6 @@ import { ProductCart } from '../../models/productCart';
   styleUrl: './product-detail.component.css'
 })
 export class ProductDetailComponent implements OnInit {
-
 
   product: Product | null = null;
   productCart: ProductCart;
@@ -43,6 +45,9 @@ export class ProductDetailComponent implements OnInit {
   // para ver si el usuario ya ha comentado y que no pueda volver a hacerlo
   hasComment: boolean = false;
 
+  // para verificar si puede poner una reseña
+  hasPurchased: boolean = false;
+
   quantity = 1;
 
   // media reseñas
@@ -53,7 +58,8 @@ export class ProductDetailComponent implements OnInit {
     private api: ApiService,
     private cartApi: CartService,
     private activatedRoute: ActivatedRoute,
-    public router: Router
+    public router: Router,
+    private orderApi: OrderService
   ) { }
 
   async ngOnInit(): Promise<void> {
@@ -82,11 +88,16 @@ export class ProductDetailComponent implements OnInit {
     }
 
     // revisa si el usuario ya ha comentado para que no pueda comentar
-    this.hasComment = this.users.some(u => u.id === user.userId);
+    this.hasComment = this.users.some(u => u.userId === user.userId);
+
+    // obtiene los pedidos para verificar si puede poner una reseña
+    const orders = await this.orderApi.getOrdersByUser(user.userId);
+    this.hasPurchased = orders.some(order =>
+      order.ProductsOrder.some(productOrder => productOrder.productId === Number(this.product.id))
+    );
 
     // calcula la media de las reseñas
     this.calculeAvg();
-
   }
 
 
@@ -106,13 +117,13 @@ export class ProductDetailComponent implements OnInit {
     if (this.isLog) {
       if (this.product) {
         let cart = await this.cartApi.getCartByUser(this.currentUser.userId);
-        console.log(cart)
+        // console.log(cart)
         // añade producto
         try {
           await this.cartApi.addToCartBBDD(this.quantity, cart.id, Number(this.product.id));
-          alert("Producto añadido al carrito.")
+          this.throwDialog("El producto se ha añadido correctamente su carrito.");
         } catch (e) {
-          alert("Error al añadir el producto.")
+          this.throwError("Error al añadir el producto.");
           console.log(e)
         }
       }
@@ -122,13 +133,13 @@ export class ProductDetailComponent implements OnInit {
       if (this.product) {
         try {
 
-          console.log("Sesión NO iniciada")
+          //console.log("Sesión NO iniciada")
           const cart = JSON.parse(localStorage.getItem('cartProducts') || '[]');
 
           if (this.quantity > this.product.stock) {
 
             this.quantity = this.product.stock;
-            alert("No hay stock suficiente.")
+            this.throwError("No hay stock suficiente.");
 
           } else {
 
@@ -140,16 +151,18 @@ export class ProductDetailComponent implements OnInit {
               cart.push({ ...this.productCart });
             }
             localStorage.setItem('cartProducts', JSON.stringify(cart));
-            console.log('Producto añadido al carrito:', this.productCart);
-            alert("El producto se ha añadido correctamente su carrito.");
+            //console.log('Producto añadido al carrito:', this.productCart);
+            this.throwDialog("El producto se ha añadido correctamente su carrito.");
           }
 
         } catch (error) {
           console.log("Error: " + error)
+          this.throwError("Se ha producido un error con el producto.");
         }
 
       }
     }
+    this.cartApi.notifyCartChange(); // Notificar el cambio en la cantidad
   }
 
   // crear reseña 
@@ -157,7 +170,7 @@ export class ProductDetailComponent implements OnInit {
     try {
       // Validar que el texto de la reseña no sea vacío o contenga solo espacios
       if (!this.textReview || this.textReview.trim().length === 0) {
-        alert("La reseña no puede estar vacía.");
+        this.throwError("La reseña no puede estar vacía.");
       } else {
         const user = this.authService.getUser();
         const idProduct = this.activatedRoute.snapshot.paramMap.get('id') as unknown as number;
@@ -178,15 +191,17 @@ export class ProductDetailComponent implements OnInit {
             this.users.push(await this.api.getUser(review.userId));
           }
           // revisa si el usuario ya ha comentado para que no pueda comentar
-          this.hasComment = this.users.some(u => u.id === user.userId);
+          this.hasComment = this.users.some(u => u.userId === user.userId);
         }
 
       }
     } catch (error) {
       console.error('Error al publicar la reseña: ', error);
+      this.throwError("Error al publicar la reseña.");
     }
 
   }
+
   // calculo media de reseñas
   calculeAvg(): void {
     if (this.reviews.length > 0) {
@@ -197,5 +212,26 @@ export class ProductDetailComponent implements OnInit {
       this.avg = 0;
     }
 
+  }
+
+  // Cuadro de diálogo de notificación
+  throwDialog(texto: string) {
+    Swal.fire({
+      title: texto,
+      icon: 'success',
+      showConfirmButton: false,
+      timer: 3000,
+      timerProgressBar: true
+    });
+  }
+
+  // Cuadro de diálogo de error
+  throwError(error: string) {
+    Swal.fire({
+      title: "Se ha producido un error",
+      text: error,
+      icon: "error",
+      confirmButtonText: "Vale"
+    });
   }
 }

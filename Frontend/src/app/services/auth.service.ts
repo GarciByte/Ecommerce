@@ -3,6 +3,7 @@ import { AuthRequest } from '../models/auth-request';
 import { AuthResponse } from '../models/auth-response';
 import { Result } from '../models/result';
 import { ApiService } from './api.service';
+import { User } from '../models/user';
 
 @Injectable({
   providedIn: 'root',
@@ -44,7 +45,7 @@ export class AuthService {
   }
 
   // Comprobar si el usuario esta logeado
-  isAuthenticated(): boolean { 
+  isAuthenticated(): boolean {
     const token = localStorage.getItem(this.TOKEN_KEY) || sessionStorage.getItem(this.TOKEN_KEY);
     return !!token;
   }
@@ -56,15 +57,34 @@ export class AuthService {
     localStorage.removeItem(this.USER_KEY);
   }
 
-  getUser() { // Obtener datos del usuario
+  getUser(): User { // Obtener datos del usuario
     const user = localStorage.getItem(this.USER_KEY) || sessionStorage.getItem(this.USER_KEY);
     return user ? JSON.parse(user) : null;
   }
 
-  //Comprobacion de permisos de administrado 
+  // comprueba si es admin
   isAdmin(): boolean {
     const user = this.getUser();
-    return user?.role === 'admin'; 
+    console.log("Tu rol es: ", user.role)
+    if (user.role == "Admin") {
+      return true
+    } else {
+      return false
+    }
   }
-  
+
+  // actualiza los datos que el usuario ha modificado
+  updateUserData(updatedUser: any) {
+    const user = localStorage.getItem(this.USER_KEY) || sessionStorage.getItem(this.USER_KEY);
+    const newUser = { ...JSON.parse(user), ...updatedUser };
+
+    // guarda el usuario actualizado en localStorage o sessionStorage
+    if (localStorage.getItem(this.USER_KEY)) {
+      localStorage.setItem(this.USER_KEY, JSON.stringify(newUser));
+    } else {
+      sessionStorage.setItem(this.USER_KEY, JSON.stringify(newUser));
+    }
+
+  }
+
 }
