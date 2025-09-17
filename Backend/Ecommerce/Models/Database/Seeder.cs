@@ -44,7 +44,7 @@ public class Seeder
                     Email = "david@gmail.com",
                     Password = PasswordHelper.Hash("123456"),
                     Address = "Su casa",
-                    Role = "User",
+                    Role = "Admin",
                     Cart = new Cart()
                 },
                 new User {
