@@ -51,7 +51,6 @@ En este momento, el sistema está en modo de prueba, por lo que es necesario uti
 
 ## Pago en Ethereum 
 
-![Ethereum](https://img.shields.io/badge/Ethereum-3C3C3D?logo=ethereum&logoColor=fff&style=for-the-badge)
 Para realizar los pagos con Ethereum utilizamos la extensión de MetaMask y la red de prueba de [Ephemery](https://ephemery.dev/).
 
 ---
